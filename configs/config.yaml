@@ -1,0 +1,67 @@
+# Voice-Enabled RAG Configuration
+
+dataset:
+  name: "ai4bharat/MSMARCO-XI"
+  language: "hi"
+  split: "train"
+  raw_cache_dir: "data/raw"
+  processed_dir: "data/processed"
+  max_passages: 2000
+
+chunking:
+  strategy: "sentence"  # "fixed", "sentence", "semantic", "recursive", "metadata_aware", "hybrid"
+  # Fixed window settings
+  fixed_window_size: 256
+  fixed_window_overlap: 32
+  # Sentence boundary settings
+  sentence_max_tokens: 300
+  sentence_overlap_sentences: 1
+
+retrieval:
+  embedding_model: "intfloat/multilingual-e5-small"
+  embedding_dim: 384
+  device: "cuda"  # "cuda" or "cpu"
+  batch_size: 64
+  index_type: "FlatIP"  # "FlatIP" (cosine) or "HNSWFlat"
+  top_k: 5
+  index_path: "data/processed/faiss_index.bin"
+  metadata_path: "data/processed/passage_metadata.json"
+
+guardrails:
+  min_confidence_threshold: 0.75
+  enable_input_safety: true
+  enable_off_topic_detection: true
+  enable_groundedness_check: true
+  refusal_message_hi: "मेरे पास इस प्रश्न का उत्तर देने के लिए प्रासंगिक और पर्याप्त जानकारी उपलब्ध नहीं है।"
+  refusal_message_en: "I do not have sufficient information in the retrieved context to answer this question."
+
+stt:
+  provider: "sarvam"    # "sarvam", "elevenlabs", "faster_whisper", "mock"
+  model_size: "tiny"    # For faster-whisper: "tiny", "base", "small", "medium", "large-v3", "large-v3-turbo"
+  device: "cuda"        # "cuda" or "cpu"
+  compute_type: "int8"  # "float16", "int8", "float32"
+  language: "hi"
+  beam_size: 1          # Greedy decoding for lowest latency
+  vad_filter: false     # Disable VAD filtering to save ~50-100ms of overhead
+
+generation:
+  provider: "mock"      # "mock", "openai", "ollama", "huggingface"
+  model_name: "mock-llm-indic"
+  temperature: 0.1
+  max_tokens: 256
+  timeout_seconds: 5.0
+
+harness:
+  max_retries: 3
+  backoff_factor: 1.5
+  enable_circuit_breaker: true
+  circuit_breaker_failure_threshold: 5
+  circuit_breaker_recovery_timeout_seconds: 30.0
+
+server:
+  host: "0.0.0.0"
+  port: 7860
+
+logging:
+  level: "INFO"
+  format: "rich"

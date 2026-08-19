@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+models/
+data/
+!data/sample_voice_query.wav
+.env*
+!.env.example
