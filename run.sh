@@ -4,6 +4,18 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
 
+# Ensure uv is in PATH
+if ! command -v uv &> /dev/null; then
+    if [ -x "$HOME/.local/bin/uv" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+    else
+        echo "❌ Error: 'uv' command not found." >&2
+        echo "Please ensure 'uv' is installed and in your PATH." >&2
+        echo "If you just ran setup.sh, try restarting your terminal." >&2
+        exit 1
+    fi
+fi
+
 # Dynamically add pip-installed CUDA libraries to LD_LIBRARY_PATH
 CUDA_LIB_PATH=$(uv run python -c "
 try:
@@ -11,7 +23,7 @@ try:
     print(os.path.dirname(nvidia.cublas.lib.__file__) + ':' + os.path.dirname(nvidia.cudnn.lib.__file__))
 except Exception:
     pass
-" 2>/dev/null)
+" 2>/dev/null || true)
 if [ -n "$CUDA_LIB_PATH" ]; then
     export LD_LIBRARY_PATH="$CUDA_LIB_PATH:$LD_LIBRARY_PATH"
 fi
