@@ -23,7 +23,7 @@ from src.utils.logging import logger
 
 # Global pipeline instance
 pipeline_instance: Optional[RAGPipeline] = None
-index_manager_instance: Optional[FAISSIndexManager] = None
+index_manager_instance: Optional[Any] = None
 config_data: Dict[str, Any] = {}
 
 
