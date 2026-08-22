@@ -29,7 +29,7 @@ retrieval:
   metadata_path: "data/processed/passage_metadata.json"
 
 guardrails:
-  min_confidence_threshold: 0.75
+  min_confidence_threshold: 0.1
   enable_input_safety: true
   enable_off_topic_detection: true
   enable_groundedness_check: true
@@ -37,7 +37,7 @@ guardrails:
   refusal_message_en: "I do not have sufficient information in the retrieved context to answer this question."
 
 stt:
-  provider: "sarvam"    # "sarvam", "elevenlabs", "faster_whisper", "mock"
+  provider: "elevenlabs"    # "sarvam", "elevenlabs", "faster_whisper", "mock"
   model_size: "tiny"    # For faster-whisper: "tiny", "base", "small", "medium", "large-v3", "large-v3-turbo"
   device: "cuda"        # "cuda" or "cpu"
   compute_type: "int8"  # "float16", "int8", "float32"
