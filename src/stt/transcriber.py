@@ -39,7 +39,7 @@ class SarvamTranscriber(BaseSTTTranscriber):
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "saaras:v2",
+        model: str = "saaras:v3",
         default_language: str = "hi",
     ):
         self.api_key = api_key or os.getenv("SARVAM_API_KEY", "")
