@@ -30,6 +30,8 @@ To achieve state-of-the-art retrieval accuracy for Indic languages without sacri
 - **Training Setup:** The model was fine-tuned over 3 epochs with a batch size of 16 using the `SentenceTransformerTrainer`. We utilized a learning rate of `2e-5` with a `0.1` warmup ratio on CUDA hardware.
 - **Outcome:** The resulting fine-tuned checkpoint (`models/indic_e5_small_finetuned`) delivers superior Cosine Similarity matching for Hindi queries while maintaining a blazing-fast embedding inference time of ~0.04ms (P70).
 
+> **Deployment Note (Render Free Tier):** To adhere to the strict 512MB RAM limits of free-tier cloud environments (like Render), we implemented a highly memory-efficient **BM25 Sparse Retrieval** fallback mode. This mode strips out the PyTorch and FAISS dependencies entirely (`requirements-deploy.txt`), reducing memory footprint to ~70MB while maintaining sub-millisecond retrieval latency (`0.51ms`). Both modes can be toggled via `config.yaml`.
+
 ---
 
 ## 1. End-to-End Pipeline Architecture
@@ -60,11 +62,11 @@ To achieve state-of-the-art retrieval accuracy for Indic languages without sacri
                                         │ Passed Safety Check
                                         ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐ ── [RETRIEVAL LEG: SLA < 200ms Budget]
-│ 3. Multilingual Dense Embedder                                                  │ ── intfloat/multilingual-e5-small (384-dim)
-│    • Query prefixing ("query: ...")                                             │ ── L2-normalized vectors + LRU Cache
+│ 3. Dual-Mode Search Engine (Dense/Sparse Toggle)                                │ ── [Dense] intfloat/multilingual-e5-small
+│    • PyTorch + Dense Embedder + LRU Cache                                       │ ── [Sparse] BM25Okapi Tokenizer
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│ 4. In-Process FAISS Vector Index                                                │ ── IndexFlatIP (Zero Network Overhead)
-│    • Top-K Cosine Similarity Search                                             │ ── Streamed MSMARCO-XI index
+│ 4. In-Process Vector/Keyword Index                                              │ ── [Dense] FAISS IndexFlatIP
+│    • Local Memory Search (Zero Network Overhead)                                │ ── [Sparse] RAM-based BM25 dictionaries
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │ 5. Post-Retrieval Confidence Guardrail                                          │ ── ConfidenceGuardrail (Threshold: 0.75)
 │    • Score Threshold Evaluation                                                 │ ── Early abstention on low confidence
