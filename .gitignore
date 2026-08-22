@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 models/
 data/
+!data/processed/
 !data/sample_voice_query.wav
 .env*
 !.env.example
