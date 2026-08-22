@@ -4,7 +4,10 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-import faiss
+try:
+    import faiss
+except ImportError:
+    faiss = None
 import numpy as np
 from src.pipeline.schemas import Chunk, RetrievedPassage
 from src.utils.logging import logger

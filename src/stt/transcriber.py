@@ -8,7 +8,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Union
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 from src.pipeline.schemas import STTResult
 from src.utils.logging import logger
 

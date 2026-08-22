@@ -5,7 +5,10 @@ from collections import OrderedDict
 import threading
 from typing import List, Optional, Union
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 from src.utils.logging import logger
 
 

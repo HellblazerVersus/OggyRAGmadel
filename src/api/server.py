@@ -18,9 +18,6 @@ from src.guardrails.safety import CompositeGuardrail
 from src.pipeline.harness import RobustExecutionHarness
 from src.pipeline.rag_pipeline import RAGPipeline
 from src.pipeline.schemas import AudioInputRequest, RAGResponse, TextInputRequest
-from src.retrieval.embedder import MultilingualE5Embedder
-from src.retrieval.index import FAISSIndexManager
-from src.retrieval.retriever import Retriever
 from src.stt.transcriber import get_transcriber
 from src.utils.logging import logger
 
@@ -54,24 +51,33 @@ async def lifespan(app: FastAPI):
     index_path = retrieval_cfg.get("index_path", "data/processed/faiss_index.bin")
     metadata_path = retrieval_cfg.get("metadata_path", "data/processed/passage_metadata.json")
 
-    # 1. Initialize Embedder
-    logger.info(f"Loading embedder: {embed_model_name} on {device}...")
-    embedder = MultilingualE5Embedder(model_name_or_path=embed_model_name, device=device, warmup=True)
-
-    # 2. Initialize / Load FAISS Index
-    index_manager = FAISSIndexManager(dimension=embedder.dimension, index_type=retrieval_cfg.get("index_type", "FlatIP"))
-    if Path(index_path).exists() and Path(metadata_path).exists():
-        logger.info(f"Loading FAISS index from {index_path}...")
-        index_manager.load(index_path, metadata_path)
+    retrieval_mode = retrieval_cfg.get("mode", "dense")
+    if retrieval_mode == "bm25":
+        logger.info("Initializing BM25 Sparse Retriever (Low Memory Mode)...")
+        from src.retrieval.bm25_retriever import BM25Retriever
+        retriever = BM25Retriever(metadata_path=metadata_path, top_k=retrieval_cfg.get("top_k", 5))
     else:
-        logger.warning("FAISS index not found on disk. Initializing bootstrap index...")
-        from benchmarks.run_latency_bench import ensure_index_exists
-        index_manager = ensure_index_exists(embedder, index_path, metadata_path)
-
-    index_manager_instance = index_manager
-
-    # 3. Retriever
-    retriever = Retriever(embedder=embedder, index_manager=index_manager, top_k=retrieval_cfg.get("top_k", 5))
+        # 1. Initialize Embedder
+        logger.info(f"Loading embedder: {embed_model_name} on {device}...")
+        from src.retrieval.embedder import MultilingualE5Embedder
+        embedder = MultilingualE5Embedder(model_name_or_path=embed_model_name, device=device, warmup=True)
+    
+        # 2. Initialize / Load FAISS Index
+        from src.retrieval.index import FAISSIndexManager
+        index_manager = FAISSIndexManager(dimension=embedder.dimension, index_type=retrieval_cfg.get("index_type", "FlatIP"))
+        if Path(index_path).exists() and Path(metadata_path).exists():
+            logger.info(f"Loading FAISS index from {index_path}...")
+            index_manager.load(index_path, metadata_path)
+        else:
+            logger.warning("FAISS index not found on disk. Initializing bootstrap index...")
+            from benchmarks.run_latency_bench import ensure_index_exists
+            index_manager = ensure_index_exists(embedder, index_path, metadata_path)
+    
+        index_manager_instance = index_manager
+    
+        # 3. Retriever
+        from src.retrieval.retriever import Retriever as DenseRetriever
+        retriever = DenseRetriever(embedder=embedder, index_manager=index_manager, top_k=retrieval_cfg.get("top_k", 5))
 
     # 4. Guardrail
     min_confidence = guard_cfg.get("min_confidence_threshold", 0.75)
