@@ -722,6 +722,11 @@ HTML_PAGE = """<!DOCTYPE html>
                 audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
                 const source = audioContext.createMediaStreamSource(mediaStream);
                 
+                // Ensure audio context is active
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
                 audioBuffers = [];
                 scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
                 scriptProcessor.onaudioprocess = (e) => {
@@ -730,8 +735,12 @@ HTML_PAGE = """<!DOCTYPE html>
                     audioBuffers.push(new Float32Array(inputData));
                 };
 
+                // Prevent echo/feedback loop by muting the output
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0;
                 source.connect(scriptProcessor);
-                scriptProcessor.connect(audioContext.destination);
+                scriptProcessor.connect(gainNode);
+                gainNode.connect(audioContext.destination);
 
                 isRecording = true;
                 recordStartTime = Date.now();
