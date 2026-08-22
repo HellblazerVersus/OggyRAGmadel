@@ -29,12 +29,10 @@ class BM25Retriever:
             return
 
         with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    try:
-                        self.passages.append(json.loads(line))
-                    except Exception:
-                        pass
+            try:
+                self.passages = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to parse JSON file: {e}")
         logger.info(f"Loaded {len(self.passages)} passages for BM25.")
 
     def _tokenize(self, text: str) -> List[str]:
